@@ -1,2 +1,6 @@
-# alu-AirBnB_clone_v2
-a project taha focuses on AirBnB_clone
+## Contributors
+
+- frida ikirezi kayiranga 
+
+GitHub:https://github.com/code2811
+
