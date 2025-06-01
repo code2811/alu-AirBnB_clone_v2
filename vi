@@ -1,0 +1,37 @@
+#!/usr/bin/python3
+"""Integration tests for AirBnB clone v2"""
+
+import unittest
+import os
+import MySQLdb
+from console import HBNBCommand
+from models import storage
+from models.state import State
+from io import StringIO
+import sys
+
+
+class TestIntegration(unittest.TestCase):
+    """Integration tests"""
+    
+    def setUp(self):
+        """Set up for integration tests"""
+        if os.getenv('HBNB_TYPE_STORAGE') == 'db':
+            self.db = MySQLdb.connect(
+                host=os.getenv('HBNB_MYSQL_HOST', 'localhost'),
+                user=os.getenv('HBNB_MYSQL_USER'),
+                passwd=os.getenv('HBNB_MYSQL_PWD'),
+                db=os.getenv('HBNB_MYSQL_DB')
+            )
+            self.cursor = self.db.cursor()
+    
+    def tearDown(self):
+        """Clean up after integration tests"""
+        if os.getenv('HBNB_TYPE_STORAGE') == 'db':
+            self.cursor.close()
+            self.db.close()
+        else:
+            try:
+                os.remove("file.json")
+            except FileNotFoundError:
+                pass
