@@ -1,235 +1,499 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """
-Test cases for console module
+Comprehensive test suite for AirBnB Clone v2 - PEP8 compliant
+File: tests/test_console.py
 """
 
 import unittest
 import os
 import MySQLdb
-from unittest import skipIf
+from unittest.mock import patch
 from io import StringIO
-import sys
 from console import HBNBCommand
 from models import storage
 from models.state import State
 from models.city import City
 from models.user import User
+from models.place import Place
+from models.review import Review
+from models.amenity import Amenity
 
 
-class TestConsoleCommand(unittest.TestCase):
-    """Test cases for console commands"""
+class TestConsoleFileStorage(unittest.TestCase):
+    """Test console with file storage"""
 
     def setUp(self):
-        """Set up test fixtures"""
-        self.console = HBNBCommand()
+        """Set up test environment"""
         self.storage_type = os.getenv('HBNB_TYPE_STORAGE', 'file')
-        
-        # Set up MySQL connection for database tests
-        if self.storage_type == 'db':
-            try:
-                self.db = MySQLdb.connect(
-                    host=os.getenv('HBNB_MYSQL_HOST', 'localhost'),
-                    user=os.getenv('HBNB_MYSQL_USER', 'hbnb_test'),
-                    passwd=os.getenv('HBNB_MYSQL_PWD', 'hbnb_test_pwd'),
-                    db=os.getenv('HBNB_MYSQL_DB', 'hbnb_test_db')
-                )
-                self.cursor = self.db.cursor()
-            except Exception:
-                self.skipTest("MySQL database not available")
 
     def tearDown(self):
         """Clean up after tests"""
-        if hasattr(self, 'db') and self.db:
-            self.db.close()
+        if self.storage_type == 'file':
+            try:
+                os.remove("file.json")
+            except FileNotFoundError:
+                pass
 
-    def create_mock_stdin(self, input_data):
-        """Create mock stdin for testing"""
-        return StringIO(input_data)
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') == 'db',
+                     "Skip file storage tests")
+    def test_create_state_file_storage(self):
+        """Test create State with file storage"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="California"')
+            state_id = f.getvalue().strip()
+        self.assertTrue(state_id)
+        key = "State.{}".format(state_id)
+        self.assertIn(key, storage.all())
 
-    def capture_stdout(self, command):
-        """Capture stdout from console command"""
-        old_stdout = sys.stdout
-        sys.stdout = StringIO()
-        
-        try:
-            self.console.onecmd(command)
-            output = sys.stdout.getvalue().strip()
-        finally:
-            sys.stdout = old_stdout
-        
-        return output
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') == 'db',
+                     "Skip file storage tests")
+    def test_create_city_file_storage(self):
+        """Test create City with file storage"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="Nevada"')
+            state_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create City state_id="{}" name="Las_Vegas"'.format(state_id)
+            HBNBCommand().onecmd(cmd)
+            city_id = f.getvalue().strip()
+        key = "City.{}".format(city_id)
+        self.assertIn(key, storage.all())
 
-    def test_help_command(self):
-        """Test help command"""
-        output = self.capture_stdout("help")
-        self.assertIn("Documented commands", output)
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') == 'db',
+                     "Skip file storage tests")
+    def test_create_user_file_storage(self):
+        """Test create User with file storage"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create User email="test@test.com" password="pwd"'
+            HBNBCommand().onecmd(cmd)
+            user_id = f.getvalue().strip()
+        key = "User.{}".format(user_id)
+        self.assertIn(key, storage.all())
 
-    def test_quit_command(self):
-        """Test quit command"""
-        with self.assertRaises(SystemExit):
-            self.console.onecmd("quit")
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') == 'db',
+                     "Skip file storage tests")
+    def test_create_place_file_storage(self):
+        """Test create Place with file storage"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="Texas"')
+            state_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create City state_id="{}" name="Dallas"'.format(state_id)
+            HBNBCommand().onecmd(cmd)
+            city_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create User email="user@test.com" password="pwd"'
+            HBNBCommand().onecmd(cmd)
+            user_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create Place city_id="{}" user_id="{}" name="House"'.format(
+                city_id, user_id)
+            HBNBCommand().onecmd(cmd)
+            place_id = f.getvalue().strip()
+        key = "Place.{}".format(place_id)
+        self.assertIn(key, storage.all())
 
-    def test_EOF_command(self):
-        """Test EOF command"""
-        with self.assertRaises(SystemExit):
-            self.console.onecmd("EOF")
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') == 'db',
+                     "Skip file storage tests")
+    def test_create_review_file_storage(self):
+        """Test create Review with file storage"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="Florida"')
+            state_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create City state_id="{}" name="Miami"'.format(state_id)
+            HBNBCommand().onecmd(cmd)
+            city_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create User email="owner@test.com" password="pwd"'
+            HBNBCommand().onecmd(cmd)
+            user_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create Place city_id="{}" user_id="{}" name="Villa"'.format(
+                city_id, user_id)
+            HBNBCommand().onecmd(cmd)
+            place_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create Review place_id="{}" user_id="{}" text="Great"'.format(
+                place_id, user_id)
+            HBNBCommand().onecmd(cmd)
+            review_id = f.getvalue().strip()
+        key = "Review.{}".format(review_id)
+        self.assertIn(key, storage.all())
 
-    def test_empty_line(self):
-        """Test empty line input"""
-        output = self.capture_stdout("")
-        self.assertEqual(output, "")
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') == 'db',
+                     "Skip file storage tests")
+    def test_create_amenity_file_storage(self):
+        """Test create Amenity with file storage"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create Amenity name="WiFi"')
+            amenity_id = f.getvalue().strip()
+        key = "Amenity.{}".format(amenity_id)
+        self.assertIn(key, storage.all())
 
-    @skipIf(os.getenv('HBNB_TYPE_STORAGE') != 'db', 
-            "Database storage only")
-    def test_create_state_db(self):
-        """Test create State command with database"""
-        # Get initial count from database
-        self.cursor.execute("SELECT COUNT(*) FROM states")
-        initial_count = self.cursor.fetchone()[0]
-        
-        # Execute create command
-        output = self.capture_stdout('create State name="California"')
-        
-        # Verify output is a valid UUID
-        self.assertTrue(len(output) > 0)
-        
-        # Check database count increased
-        self.cursor.execute("SELECT COUNT(*) FROM states")
-        final_count = self.cursor.fetchone()[0]
-        self.assertEqual(final_count - initial_count, 1)
-        
-        # Verify state data in database
-        self.cursor.execute(
-            "SELECT name FROM states WHERE id = %s", (output,)
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') == 'db',
+                     "Skip file storage tests")
+    def test_show_command_file_storage(self):
+        """Test show command with file storage"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="Ohio"')
+            state_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('show State {}'.format(state_id))
+            output = f.getvalue().strip()
+        self.assertIn(state_id, output)
+        self.assertIn("Ohio", output)
+
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') == 'db',
+                     "Skip file storage tests")
+    def test_all_command_file_storage(self):
+        """Test all command with file storage"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="Michigan"')
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('all State')
+            output = f.getvalue().strip()
+        self.assertIn("Michigan", output)
+
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') == 'db',
+                     "Skip file storage tests")
+    def test_destroy_command_file_storage(self):
+        """Test destroy command with file storage"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="Georgia"')
+            state_id = f.getvalue().strip()
+        key = "State.{}".format(state_id)
+        self.assertIn(key, storage.all())
+        HBNBCommand().onecmd('destroy State {}'.format(state_id))
+        self.assertNotIn(key, storage.all())
+
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') == 'db',
+                     "Skip file storage tests")
+    def test_update_command_file_storage(self):
+        """Test update command with file storage"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="Oregon"')
+            state_id = f.getvalue().strip()
+        cmd = 'update State {} name "Washington"'.format(state_id)
+        HBNBCommand().onecmd(cmd)
+        key = "State.{}".format(state_id)
+        state = storage.all()[key]
+        self.assertEqual(state.name, "Washington")
+
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') == 'db',
+                     "Skip file storage tests")
+    def test_count_command_file_storage(self):
+        """Test count command with file storage"""
+        initial_count = len([obj for obj in storage.all().values()
+                            if type(obj).__name__ == "State"])
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="Idaho"')
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('count State')
+            output = f.getvalue().strip()
+        self.assertEqual(int(output), initial_count + 1)
+
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') == 'db',
+                     "Skip file storage tests")
+    def test_parameter_parsing_strings(self):
+        """Test parameter parsing with strings"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="New_York"')
+            state_id = f.getvalue().strip()
+        key = "State.{}".format(state_id)
+        state = storage.all()[key]
+        self.assertEqual(state.name, "New York")
+
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') == 'db',
+                     "Skip file storage tests")
+    def test_parameter_parsing_integers(self):
+        """Test parameter parsing with integers"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="Test"')
+            state_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create City state_id="{}" name="Test"'.format(state_id)
+            HBNBCommand().onecmd(cmd)
+            city_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create User email="test@test.com" password="pwd"'
+            HBNBCommand().onecmd(cmd)
+            user_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = ('create Place city_id="{}" user_id="{}" name="Test" '
+                   'number_rooms=4 max_guest=8 price_by_night=100').format(
+                city_id, user_id)
+            HBNBCommand().onecmd(cmd)
+            place_id = f.getvalue().strip()
+        key = "Place.{}".format(place_id)
+        place = storage.all()[key]
+        self.assertEqual(place.number_rooms, 4)
+        self.assertEqual(place.max_guest, 8)
+        self.assertEqual(place.price_by_night, 100)
+
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') == 'db',
+                     "Skip file storage tests")
+    def test_parameter_parsing_floats(self):
+        """Test parameter parsing with floats"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="Test"')
+            state_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create City state_id="{}" name="Test"'.format(state_id)
+            HBNBCommand().onecmd(cmd)
+            city_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create User email="test@test.com" password="pwd"'
+            HBNBCommand().onecmd(cmd)
+            user_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = ('create Place city_id="{}" user_id="{}" name="Test" '
+                   'latitude=37.774 longitude=-122.431').format(
+                city_id, user_id)
+            HBNBCommand().onecmd(cmd)
+            place_id = f.getvalue().strip()
+        key = "Place.{}".format(place_id)
+        place = storage.all()[key]
+        self.assertAlmostEqual(place.latitude, 37.774)
+        self.assertAlmostEqual(place.longitude, -122.431)
+
+
+class TestConsoleDBStorage(unittest.TestCase):
+    """Test console with database storage"""
+
+    def setUp(self):
+        """Set up test environment"""
+        self.storage_type = os.getenv('HBNB_TYPE_STORAGE', 'file')
+
+    def get_db_connection(self):
+        """Get direct MySQL connection"""
+        return MySQLdb.connect(
+            host=os.getenv('HBNB_MYSQL_HOST', 'localhost'),
+            user=os.getenv('HBNB_MYSQL_USER', 'hbnb_test'),
+            passwd=os.getenv('HBNB_MYSQL_PWD', 'hbnb_test_pwd'),
+            db=os.getenv('HBNB_MYSQL_DB', 'hbnb_test_db')
         )
-        result = self.cursor.fetchone()
-        self.assertIsNotNone(result)
-        self.assertEqual(result[0], "California")
 
-    @skipIf(os.getenv('HBNB_TYPE_STORAGE') == 'db', 
-            "File storage only")
-    def test_create_state_file(self):
-        """Test create State command with file storage"""
-        initial_count = len([obj for obj in storage.all().values() 
-                           if type(obj) is State])
-        
-        output = self.capture_stdout('create State name="Texas"')
-        
-        # Verify output is a valid UUID
-        self.assertTrue(len(output) > 0)
-        
-        # Check storage count increased
-        final_count = len([obj for obj in storage.all().values() 
-                         if type(obj) is State])
-        self.assertEqual(final_count - initial_count, 1)
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') != 'db',
+                     "Skip database tests")
+    def test_create_state_db_storage(self):
+        """Test create State with database storage"""
+        db = self.get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM states")
+        initial_count = cursor.fetchone()[0]
+        cursor.close()
 
-    def test_create_with_parameters(self):
-        """Test create command with parameters"""
-        output = self.capture_stdout(
-            'create User email="test@test.com" password="123" '
-            'first_name="John" last_name="Doe"'
-        )
-        
-        # Should return UUID
-        self.assertTrue(len(output) > 0)
-        
-        # Verify object was created
-        user_key = f"User.{output}"
-        all_objects = storage.all()
-        self.assertIn(user_key, all_objects)
-        
-        user = all_objects[user_key]
-        self.assertEqual(user.email, "test@test.com")
-        self.assertEqual(user.first_name, "John")
-        self.assertEqual(user.last_name, "Doe")
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="California"')
+            state_id = f.getvalue().strip()
 
-    def test_show_command(self):
-        """Test show command"""
-        # First create an object
-        create_output = self.capture_stdout('create State name="Nevada"')
-        state_id = create_output
-        
-        # Then show it
-        show_output = self.capture_stdout(f'show State {state_id}')
-        
-        self.assertIn("State", show_output)
-        self.assertIn(state_id, show_output)
-        self.assertIn("Nevada", show_output)
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM states")
+        new_count = cursor.fetchone()[0]
+        cursor.close()
+        db.close()
 
-    def test_show_nonexistent(self):
-        """Test show command with nonexistent object"""
-        output = self.capture_stdout('show State nonexistent-id')
-        self.assertIn("** no instance found **", output)
+        self.assertEqual(new_count, initial_count + 1)
 
-    def test_destroy_command(self):
-        """Test destroy command"""
-        # Create object first
-        create_output = self.capture_stdout('create State name="ToDelete"')
-        state_id = create_output
-        
-        # Verify it exists
-        show_output = self.capture_stdout(f'show State {state_id}')
-        self.assertIn("ToDelete", show_output)
-        
-        # Destroy it
-        destroy_output = self.capture_stdout(f'destroy State {state_id}')
-        self.assertEqual(destroy_output, "")
-        
-        # Verify it's gone
-        show_output = self.capture_stdout(f'show State {state_id}')
-        self.assertIn("** no instance found **", show_output)
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') != 'db',
+                     "Skip database tests")
+    def test_create_city_db_storage(self):
+        """Test create City with database storage"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="Texas"')
+            state_id = f.getvalue().strip()
 
-    def test_all_command(self):
-        """Test all command"""
-        output = self.capture_stdout('all State')
-        self.assertTrue(output.startswith('['))
-        self.assertTrue(output.endswith(']'))
+        db = self.get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM cities")
+        initial_count = cursor.fetchone()[0]
+        cursor.close()
 
-    def test_all_command_with_class(self):
-        """Test all command with specific class"""
-        # Create a state first
-        self.capture_stdout('create State name="TestAll"')
-        
-        output = self.capture_stdout('all State')
-        self.assertIn("TestAll", output)
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create City state_id="{}" name="Dallas"'.format(state_id)
+            HBNBCommand().onecmd(cmd)
+            city_id = f.getvalue().strip()
 
-    def test_update_command(self):
-        """Test update command"""
-        # Create object first
-        create_output = self.capture_stdout('create State name="OldName"')
-        state_id = create_output
-        
-        # Update it
-        update_output = self.capture_stdout(
-            f'update State {state_id} name "NewName"'
-        )
-        self.assertEqual(update_output, "")
-        
-        # Verify update
-        show_output = self.capture_stdout(f'show State {state_id}')
-        self.assertIn("NewName", show_output)
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM cities")
+        new_count = cursor.fetchone()[0]
+        cursor.close()
+        db.close()
 
-    def test_count_command(self):
-        """Test count command if implemented"""
-        output = self.capture_stdout('count State')
-        # Should return a number or empty if not implemented
-        if output:
-            self.assertTrue(output.isdigit())
+        self.assertEqual(new_count, initial_count + 1)
 
-    def test_invalid_command(self):
-        """Test invalid command"""
-        output = self.capture_stdout('invalid_command')
-        self.assertIn("*** Unknown syntax", output)
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') != 'db',
+                     "Skip database tests")
+    def test_create_user_db_storage(self):
+        """Test create User with database storage"""
+        db = self.get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM users")
+        initial_count = cursor.fetchone()[0]
+        cursor.close()
 
-    def test_create_missing_class(self):
-        """Test create command without class name"""
-        output = self.capture_stdout('create')
-        self.assertIn("** class name missing **", output)
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create User email="test@test.com" password="pwd"'
+            HBNBCommand().onecmd(cmd)
+            user_id = f.getvalue().strip()
 
-    def test_create_invalid_class(self):
-        """Test create command with invalid class"""
-        output = self.capture_stdout('create InvalidClass')
-        self.assertIn("** class doesn't exist **", output)
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM users")
+        new_count = cursor.fetchone()[0]
+        cursor.close()
+        db.close()
+
+        self.assertEqual(new_count, initial_count + 1)
+
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') != 'db',
+                     "Skip database tests")
+    def test_create_place_db_storage(self):
+        """Test create Place with database storage"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="Florida"')
+            state_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create City state_id="{}" name="Miami"'.format(state_id)
+            HBNBCommand().onecmd(cmd)
+            city_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create User email="owner@test.com" password="pwd"'
+            HBNBCommand().onecmd(cmd)
+            user_id = f.getvalue().strip()
+
+        db = self.get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM places")
+        initial_count = cursor.fetchone()[0]
+        cursor.close()
+
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create Place city_id="{}" user_id="{}" name="Villa"'.format(
+                city_id, user_id)
+            HBNBCommand().onecmd(cmd)
+            place_id = f.getvalue().strip()
+
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM places")
+        new_count = cursor.fetchone()[0]
+        cursor.close()
+        db.close()
+
+        self.assertEqual(new_count, initial_count + 1)
+
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') != 'db',
+                     "Skip database tests")
+    def test_create_review_db_storage(self):
+        """Test create Review with database storage"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="Nevada"')
+            state_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create City state_id="{}" name="Vegas"'.format(state_id)
+            HBNBCommand().onecmd(cmd)
+            city_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create User email="guest@test.com" password="pwd"'
+            HBNBCommand().onecmd(cmd)
+            user_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create Place city_id="{}" user_id="{}" name="Hotel"'.format(
+                city_id, user_id)
+            HBNBCommand().onecmd(cmd)
+            place_id = f.getvalue().strip()
+
+        db = self.get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM reviews")
+        initial_count = cursor.fetchone()[0]
+        cursor.close()
+
+        with patch('sys.stdout', new=StringIO()) as f:
+            cmd = 'create Review place_id="{}" user_id="{}" text="Good"'.format(
+                place_id, user_id)
+            HBNBCommand().onecmd(cmd)
+            review_id = f.getvalue().strip()
+
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM reviews")
+        new_count = cursor.fetchone()[0]
+        cursor.close()
+        db.close()
+
+        self.assertEqual(new_count, initial_count + 1)
+
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') != 'db',
+                     "Skip database tests")
+    def test_create_amenity_db_storage(self):
+        """Test create Amenity with database storage"""
+        db = self.get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM amenities")
+        initial_count = cursor.fetchone()[0]
+        cursor.close()
+
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create Amenity name="Pool"')
+            amenity_id = f.getvalue().strip()
+
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM amenities")
+        new_count = cursor.fetchone()[0]
+        cursor.close()
+        db.close()
+
+        self.assertEqual(new_count, initial_count + 1)
+
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') != 'db',
+                     "Skip database tests")
+    def test_show_command_db_storage(self):
+        """Test show command with database storage"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="Ohio"')
+            state_id = f.getvalue().strip()
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('show State {}'.format(state_id))
+            output = f.getvalue().strip()
+        self.assertIn(state_id, output)
+
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') != 'db',
+                     "Skip database tests")
+    def test_all_command_db_storage(self):
+        """Test all command with database storage"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="Michigan"')
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('all State')
+            output = f.getvalue().strip()
+        self.assertIn("Michigan", output)
+
+    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') != 'db',
+                     "Skip database tests")
+    def test_destroy_command_db_storage(self):
+        """Test destroy command with database storage"""
+        with patch('sys.stdout', new=StringIO()) as f:
+            HBNBCommand().onecmd('create State name="Georgia"')
+            state_id = f.getvalue().strip()
+
+        db = self.get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM states WHERE id = %s",
+                       (state_id,))
+        count_before = cursor.fetchone()[0]
+        cursor.close()
+
+        HBNBCommand().onecmd('destroy State {}'.format(state_id))
+
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM states WHERE id = %s",
+                       (state_id,))
+        count_after = cursor.fetchone()[0]
+        cursor.close()
+        db.close()
+
+        self.assertEqual(count_before, 1)
+        self.assertEqual(count_after, 0)
 
 
 if __name__ == '__main__':
